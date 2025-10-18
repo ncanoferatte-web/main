@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Demo Mini App Redirect</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    body{font-family:system-ui,Arial,sans-serif;margin:0;padding:20px}
+    h1{font-size:18px;margin:0 0 10px}
+    input,button{font-size:16px;padding:10px;border-radius:10px;border:1px solid #ccc}
+    button{border:none;margin-top:10px}
+  </style>
+</head>
+<body>
+  <h1>Demo Mini App</h1>
+  <p>Передай ссылку через deep-link или введи HTTPS-URL и нажми «Открыть».</p>
+  <input id="u" placeholder="https://example.com" style="width:100%" />
+  <button id="go">Открыть</button>
+  <script>
+    (function () {
+      const tg = window.Telegram && Telegram.WebApp;
+      if (tg) { tg.ready(); tg.expand(); }
+
+      const whitelist = []; // например: ['example.com','ваш.домен']
+      const isAllowed = (url) => {
+        try {
+          const u = new URL(url);
+          if (u.protocol !== 'https:') return false;
+          if (!whitelist.length) return true;
+          return whitelist.some(d => u.hostname === d || u.hostname.endsWith('.'+d));
+        } catch(e){ return false; }
+      };
+
+      // payload из deep-link: https://t.me/<bot>/app?startapp=<url-encoded>
+      const raw = tg?.initDataUnsafe?.start_param || '';
+      let target = '';
+      try { target = decodeURIComponent(raw || ''); } catch(e){}
+
+      const open = (url) => location.replace(url);
+
+      if (target && isAllowed(target)) {
+        open(target);
+      } else {
+        document.getElementById('go').onclick = () => {
+          const val = document.getElementById('u').value.trim();
+          if (isAllowed(val)) open(val);
+          else alert('Нужен корректный HTTPS-URL (домен может быть не в белом списке).');
+        };
+      }
+    })();
+  </script>
+</body>
+</html>
